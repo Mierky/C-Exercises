@@ -1,0 +1,167 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Reteta Reteta;
+struct Reteta {
+	unsigned int nr;
+	unsigned char nr_medicamente;
+	char** denumiri_medicamente;
+	unsigned char* cantitati;
+	float* procente_de_compensare;
+	char* nume_medic;
+};
+
+typedef struct Nod Nod;
+struct Nod {
+	Reteta info;
+	Nod* next;
+	Nod* prev;
+};
+
+typedef struct ListaDubla ListaDubla;
+struct ListaDubla {
+	Nod* head;
+	Nod* tail;
+};
+
+Reteta initReteta(unsigned int nr, unsigned char nr_medicamente, char** denumiri_medicamente,
+	unsigned char* cantitati, float* procente_de_compensare, char* nume_medic) {
+	Reteta r;
+	r.nr = nr;
+	r.nr_medicamente = nr_medicamente;
+	r.denumiri_medicamente = (char**)malloc(sizeof(char*) * r.nr_medicamente);
+	for (int i = 0; i < r.nr_medicamente; i++) {
+		r.denumiri_medicamente[i] = (char*)malloc(sizeof(char) * (strlen(denumiri_medicamente[i]) + 1));
+		strcpy(r.denumiri_medicamente[i], denumiri_medicamente[i]);
+	}
+
+	r.cantitati = (unsigned char*)malloc(sizeof(unsigned char) * r.nr_medicamente);
+	for (int i = 0; i < r.nr_medicamente; i++) {
+		r.cantitati[i] = cantitati[i];
+	}
+
+	r.procente_de_compensare = (float*)malloc(sizeof(float) * r.nr_medicamente);
+	for (int i = 0; i < r.nr_medicamente; i++) {
+		r.procente_de_compensare[i] = procente_de_compensare[i];
+	}
+	
+	r.nume_medic = (char*)malloc(sizeof(char) * (strlen(cantitati) + 1));
+	strcpy(r.nume_medic, nume_medic);
+
+	return r;
+}
+
+ListaDubla inserareSfarsit(ListaDubla lista,Reteta r) {
+	Nod* nod = (Nod*)malloc(sizeof(Nod));
+	nod->info = r;
+	nod->next = NULL;
+	nod->prev = lista.tail;
+
+	if (lista.tail) {
+		lista.tail->next = nod;
+	}
+	else {
+		lista.head = nod;
+	}
+	lista.tail = nod;
+
+	return lista;
+}
+
+void afisareReteta(Reteta r) {
+	printf("{ ");
+	printf("Nr: %d | Nr.medicamente: %d | Medic: %s \n", r.nr, r.nr_medicamente,r.nume_medic);
+	printf("Denumiri: ");
+	for (int i = 0; i < r.nr_medicamente; i++) {
+		printf("%s, ", r.denumiri_medicamente[i]);
+	}
+	printf("\n");
+	printf("Cantitati: ");
+	for (int i = 0; i < r.nr_medicamente; i++) {
+		printf("%d, ", r.cantitati[i]);
+	}
+	printf("\n");
+	printf("Procente: ");
+	for (int i = 0; i < r.nr_medicamente; i++) {
+		printf("%.2f, ", r.procente_de_compensare[i]);
+	}
+
+	printf("}\n");
+}
+
+ListaDubla citireDinTXT(ListaDubla lista) {
+
+	FILE* f = fopen("Medicamente.txt", "r");	
+	if (f) {
+		char buffer[200];
+		char delimitator[] = ",\n";
+		while (fgets(buffer, 200, f)) {
+			Reteta r;
+			char* token = strtok(buffer, delimitator);
+			r.nr = (unsigned int)atoi(token);
+
+			token = strtok(NULL, delimitator);
+			r.nr_medicamente = (unsigned char)atoi(token);
+
+			r.denumiri_medicamente = (char**)malloc(sizeof(char*) * r.nr_medicamente);
+			for (int i = 0; i < r.nr_medicamente; i++) {
+				token = strtok(NULL, delimitator);
+				r.denumiri_medicamente[i] = (char*)malloc(sizeof(char) * (strlen(token) + 1));
+				strcpy(r.denumiri_medicamente[i], token);
+			}
+
+			r.cantitati = (unsigned char*)malloc(sizeof(unsigned char) * r.nr_medicamente);
+			for (int i = 0; i < r.nr_medicamente; i++) {
+				token = strtok(NULL, delimitator);
+				r.cantitati[i] = (unsigned char)atoi(token);
+			}
+
+			r.procente_de_compensare = (float*)malloc(sizeof(float) * r.nr_medicamente);
+			for (int i = 0; i < r.nr_medicamente; i++) {
+				token = strtok(NULL, delimitator);
+				r.procente_de_compensare[i] = atof(token);
+			}
+
+			token = strtok(NULL, delimitator);
+			r.nume_medic = (char*)malloc(sizeof(char) * (strlen(token) + 1));
+			strcpy(r.nume_medic, token);
+
+			lista = inserareSfarsit(lista, r);
+		}
+		fclose(f);
+	}
+	return lista;
+}
+
+void afisareListaDubla(ListaDubla lista) {
+	while (lista.head) {
+		afisareReteta(lista.head->info);
+		printf("\n");
+		lista.head = lista.head->next;
+	}
+}
+
+void main() {
+	//char* denumiri_medicamente[] = { "Medicament1", "Medicament2", "Medicament3" };
+	//unsigned char cantitati[] = { 10, 20, 30 };
+	//float procente_de_compensare[] = { 0.1, 0.2, 0.3 };
+	//char nume_medic[] = "Dr. Smith";
+
+	//Reteta r = initReteta(1, 3, denumiri_medicamente, cantitati, procente_de_compensare, nume_medic);
+	//afisareReteta(r);
+
+	ListaDubla lista;
+	lista.head = NULL;
+	lista.tail = NULL;
+	lista = citireDinTXT(lista);
+	afisareListaDubla(lista);
+}
+/*
+1,3,Aspirina,Paracetamol,Ibuprofen,10,20,15,50.0,75.0,60.0,Dr. Popescu
+2,2,Amoxicilina,Ciprofloxacina,5,10,80.0,90.0,Dr. Ionescu
+3,4,Ibuprofen,Diclofenac,Naproxen,Paracetamol,12,8,15,20,50.0,65.0,70.0,85.0,Dr. Marinescu
+4,1,Omeprazol,30,60.0,Dr. Georgescu
+5,2,Metformin,Glipizide,15,10,75.0,80.0,Dr. Tanase
+*/
